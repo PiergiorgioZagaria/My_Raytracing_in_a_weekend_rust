@@ -20,12 +20,6 @@ impl Ray{
     pub fn point_at_parameter(&self,t: f32) -> Vec3{
         self.origin + self.direction * t
     }
-    pub fn get_origin(&self) -> Vec3 {
-        return self.origin;
-    }
-    pub fn get_direction(&self) -> Vec3 {
-        return self.direction;
-    }
 }
 
 impl Vec3 {
@@ -40,41 +34,36 @@ impl Vec3 {
             if p.squared_len() < 1. {return p;}
         }
     }
+//     // Color returned based on the normal from the intersection of the ray and the sphere
+//     pub fn color(r: Ray,world: &HitableList) -> Self{
+//         let mut rec: HitRecord = HitRecord::new(0.,Vec3::new(0.,0.,0.), Vec3::new(0.,0.,0.));
+//         if world.hit_list(&r,0.,f32::MAX,&mut rec) {
+//             // Return the color created from the normal's coordinates
+//             return (rec.normal + Vec3::new(1.,1.,1.)) * 0.5;
+//         }else{
+//             // Linearly blend blue and white based on the direction y coordinate
+//             // High y = blue, Low y = white. This is called linear interpolation
+//             let unit = r.direction.unit_vector();
+//             let t = (unit.y + 1.) * 0.5;
+//             Vec3::new(1.,1.,1.)*(1. - t) + Vec3::new(0.5,0.7,1.)*t
+//         }
+//     }
 
-    /// To use on matte (diffuse) surfaces. Diffuse surfaces make the 
-    /// ray bounce around at random, so they absorb the color of the 
-    /// things around them, try changing the colors in the else.
-    pub fn color_matte(r: Ray,world: &HitableList) -> Self{
-        let mut rec: HitRecord = HitRecord::new(0.,Vec3::new(0.,0.,0.), Vec3::new(0.,0.,0.));
-        // The 0.001 is so that we can prevent shadow acne,
-        // try to set it to zero and notice differences, in
-        // paticular at the top of the big sphere under the 
-        // small one
+    pub fn color_material(r: &Ray,world: &HitableList,depth: i32) -> Vec3 {
+        let mut rec: HitRecord = HitRecord::new(0.,Vec3::new(0.,0.,0.), Vec3::new(0.,0.,0.),Materials::Lambertian(Vec3::new(0.,0.,0.)));
+        // To prevent shadow acne, try setting it to other values
         if world.hit_list(&r,0.001,f32::MAX,&mut rec) {
-            // Make the ray bounce around.
-            // First it creates a random direction with random_in_unit_sphere,
-            // then it calls color with the bounced ray, until it can't hit anything else
-            let target = rec.get_p() + rec.get_normal() + Vec3::random_in_unit_sphere();
-            return Vec3::color_matte(Ray::new(rec.p,target - rec.get_p()),world) * 0.5;
+            let mut scattered = Ray::new(Vec3::new(0.,0.,0.),Vec3::new(0.,0.,0.));
+            let mut attenuation = Vec3::new(0.,0.,0.);
+            if depth < 50 && HitRecord::scatter(r,&rec,&mut attenuation,&mut scattered) {
+                return attenuation * Vec3::color_material(&scattered,world,depth + 1);
+            }else{
+                return Vec3::new(0.,0.,0.);
+            }
         }else{
             // Linearly blend blue and white based on the direction y coordinate
             // High y = blue, Low y = white. This is called linear interpolation
-            let unit = r.get_direction().unit_vector();
-            let t = (unit.y + 1.) * 0.5;
-            Vec3::new(1.,1.,1.)*(1. - t) + Vec3::new(1.,0.4,0.65)*t
-        }
-    }
-
-    // Color returned based on the normal from the intersection of the ray and the sphere
-    pub fn color(r: Ray,world: &HitableList) -> Self{
-        let mut rec: HitRecord = HitRecord::new(0.,Vec3::new(0.,0.,0.), Vec3::new(0.,0.,0.));
-        if world.hit_list(&r,0.,f32::MAX,&mut rec) {
-            // Return the color created from the normal's coordinates
-            return (rec.get_normal() + Vec3::new(1.,1.,1.)) * 0.5;
-        }else{
-            // Linearly blend blue and white based on the direction y coordinate
-            // High y = blue, Low y = white. This is called linear interpolation
-            let unit = r.get_direction().unit_vector();
+            let unit = r.direction.unit_vector();
             let t = (unit.y + 1.) * 0.5;
             Vec3::new(1.,1.,1.)*(1. - t) + Vec3::new(0.5,0.7,1.)*t
         }
@@ -97,37 +86,29 @@ pub struct HitRecord{
     t: f32,
     p: Vec3,
     normal: Vec3,
+    material: Materials,
 }
 
 impl HitRecord{
-    pub fn new(t: f32, p: Vec3, normal: Vec3) -> Self {
-        Self {t,p,normal}
-    }
-    pub fn get_t(&self) -> f32{
-        return self.t;
-    }
-    pub fn get_p(&self) -> Vec3{
-        return self.p;
-    }
-    pub fn get_normal(&self) -> Vec3{
-        return self.normal;
+    pub fn new(t: f32, p: Vec3, normal: Vec3,material: Materials) -> Self {
+        Self {t,p,normal,material}
     }
 }
 
 /// A trait implemented by things that can be hit by a ray
 pub trait Hitable{
     fn hit(&self,r: &Ray,t_min: f32, t_max: f32,rec: &mut HitRecord) -> bool;
-    fn up(&mut self);
 }
 
 pub struct Sphere{
     center: Vec3,
     radius: f32,
+    material: Materials,
 }
 
 impl Sphere{
-    pub fn new(center: Vec3,radius: f32) -> Self{
-        Self{center,radius}
+    pub fn new(center: Vec3,radius: f32, material: Materials) -> Self{
+        Self{center,radius,material}
     }
 }
 
@@ -149,6 +130,7 @@ impl Hitable for Sphere{
                 rec.t = temp;
                 rec.p = r.point_at_parameter(temp);
                 rec.normal = (rec.p - self.center)/self.radius;
+                rec.material = self.material;
                 return true;
             }
             let temp = (-b + delta.sqrt())/a;
@@ -156,17 +138,13 @@ impl Hitable for Sphere{
                 rec.t = temp;
                 rec.p = r.point_at_parameter(temp);
                 rec.normal = (rec.p - self.center)/self.radius;
+                rec.material = self.material;
                 return true;
             }
             return false;
         }else{
             return false;
         }
-    }
-
-    /// Used just to test things
-    fn up(&mut self){
-        self.center.y += 1.;
     }
 }
 
@@ -178,7 +156,7 @@ pub struct HitableList{
 impl HitableList {
     /// Checks wether the ray hit something in the list
     pub fn hit_list(&self,r: &Ray, t_min:f32,t_max:f32,rec:&mut HitRecord) -> bool{
-        let mut temp_rec: HitRecord = HitRecord {t: 0.,p:Vec3::new(0.,0.,0.),normal: Vec3::new(0.,0.,0.)};
+        let mut temp_rec: HitRecord = HitRecord::new(0.,Vec3::new(0.,0.,0.),Vec3::new(0.,0.,0.),Materials::Lambertian(Vec3::new(0.,0.,0.)));
         let mut hit_anything = false;
         let mut closest_so_far = t_max;
         for i in self.list.iter(){
@@ -207,3 +185,38 @@ impl Camera{
         Ray::new(self.origin,self.lower_left_corner + self.horizontal * u + self.vertical * v - self.origin)
     }
 }
+
+// The direction after a ray has been reflected off
+// a metal surface
+fn reflect(v: &Vec3,n: &Vec3) -> Vec3 {
+    return *v -  (*n) * v.dot(*n) * 2.;
+}
+
+#[derive(Clone, Copy)]
+pub enum Materials{
+    Lambertian(Vec3),
+    Metal(Vec3,f32),
+}
+
+impl HitRecord {
+    pub fn scatter(r_in: &Ray, rec: &HitRecord,attenuation: &mut Vec3,scattered: &mut Ray) -> bool{
+        match rec.material {
+            // To use on matte (diffuse, Lambertian) surfaces. Diffuse surfaces make the 
+            // ray bounce around at random, so they absorb the color of the 
+            // things around them, try changing the colors in the else.
+            Materials::Lambertian(v) => {
+                let target = rec.p + rec.normal + Vec3::random_in_unit_sphere();
+                *scattered = Ray::new(rec.p, target - rec.p);
+                *attenuation = v;
+                return true;
+            },
+            Materials::Metal(v,f) => {
+                let reflected = reflect(&r_in.direction.unit_vector(),&rec.normal);
+                *scattered = Ray::new(rec.p,reflected + Vec3::random_in_unit_sphere() * if f > 1. {1.} else {f});
+                *attenuation = v;
+                return scattered.direction.dot(rec.normal) > 0.;
+            }
+        }
+    }
+}
+
