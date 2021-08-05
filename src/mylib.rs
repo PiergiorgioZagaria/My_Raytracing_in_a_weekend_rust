@@ -158,7 +158,7 @@ impl HitRecord {
                 } else {
                     outward_normal = rec.normal;
                     ni_over_nt = 1. / ref_idx;
-                    cosine = r_in.direction.dot(rec.normal) / (-1. * r_in.direction.length())
+                    cosine = r_in.direction.dot(rec.normal) / (-1. * r_in.direction.length());
                 }
 
                 if refract(&r_in.direction, &outward_normal, ni_over_nt, &mut refracted) {
@@ -240,7 +240,7 @@ impl Hitable for Sphere {
 
 /// A HitableList contains a list of all the objects that can be hit
 pub struct HitableList {
-    pub list: Vec<Box<dyn Hitable>>,
+    pub list: Vec<Box<dyn Hitable + Sync>>,
 }
 
 impl HitableList {
@@ -266,7 +266,7 @@ impl HitableList {
 
     pub fn random_scene() -> Self {
         let n = 500;
-        let mut list: Vec<Box<dyn Hitable>> = Vec::with_capacity(n + 1);
+        let mut list: Vec<Box<dyn Hitable + Sync>> = Vec::with_capacity(n + 1);
         list.push(Box::new(Sphere::new(
             Vec3::new(0., -1000., 0.),
             1000.,
