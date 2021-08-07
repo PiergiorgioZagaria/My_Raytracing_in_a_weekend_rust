@@ -18,9 +18,9 @@ use std::sync::Arc;
 
 const WIDTH: usize = 640;
 const HEIGHT: usize = 320;
-const SECS: usize = 300; //100
+const SECS: usize = 65; //100
 
-const USE_RANDOM_SCENE: bool = false;
+const USE_RANDOM_SCENE: bool = true;
 const USE_MULTITHREADING: bool = true;
 
 fn main() {
@@ -37,15 +37,15 @@ fn main() {
         panic!("{}", e);
     });
 
-    let lookfrom = Vec3::new(0., 0., 0.);
-    let lookat = Vec3::new(0., 0., -1.);
-    let dist_to_focus = (lookfrom - lookat).length();
+    let lookfrom = Vec3::new(13., 2., 3.);
+    let lookat = Vec3::new(0., 0., 0.);
+    let dist_to_focus = 10.;//(lookfrom - lookat).length();
     let aperture = 0.1;
     let cam = Camera::new(
         lookfrom,
         lookat,
         Vec3::new(0., 1., 0.),
-        120.,
+        20.,
         WIDTH as f32 / HEIGHT as f32,
         aperture,
         dist_to_focus,

@@ -1,5 +1,4 @@
 use std::ops;
-// use crate::mylib::{HitRecord,HitableList,Ray};
 
 /// A struct that holds 3 coordinates as floats
 #[derive(Debug,Clone,Copy,PartialEq)]

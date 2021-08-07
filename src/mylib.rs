@@ -1,5 +1,3 @@
-// mod materials;
-
 use crate::materials::*;
 use crate::hitables::*;
 use crate::vecmath::Vec3;
@@ -42,7 +40,7 @@ impl Vec3 {
         let mut p: Vec3;
         let mut rng = rand::thread_rng();
         loop {
-            p = Vec3::new(rng.gen(), rng.gen(), rng.gen()) * 2.;
+            p = Vec3::new(rng.gen(), rng.gen(), rng.gen()) * 2.- Vec3::new(1., 1., 1.);
             // radius <= 1
             if p.squared_len() < 1. {
                 return p;
@@ -55,7 +53,7 @@ impl Vec3 {
         let mut p: Vec3;
         let mut rng = rand::thread_rng();
         loop {
-            p = Vec3::new(rng.gen::<f32>(), rng.gen::<f32>(), 0.) * 2. - Vec3::new(1., 1., 0.);
+            p = Vec3::new(rng.gen(), rng.gen(), 0.) * 2. - Vec3::new(1., 1., 0.);
             // radius <= 1
             if p.squared_len() < 1. {
                 return p;

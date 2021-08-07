@@ -9,6 +9,7 @@ pub struct HitRecord {
     t: f32,
     p: Vec3,
     normal: Vec3,
+    front_face: bool,
     material: Arc<dyn Material + Sync + Send>,
 }
 
@@ -19,7 +20,12 @@ impl HitRecord {
             p,
             normal,
             material,
+            front_face: true,
         }
+    }
+    pub fn set_face_normal(&mut self,r: &Ray,outward_normal: &Vec3){
+        self.front_face = r.get_direction().dot(*outward_normal) < 0.;
+        self.normal = if self.front_face {*outward_normal} else {*outward_normal * -1.};
     }
     pub fn scatter(&self, r_in: &Ray, attenuation: &mut Vec3, scattered: &mut Ray) -> bool {
         self.material.scatter(r_in, self, attenuation, scattered)
@@ -32,6 +38,9 @@ impl HitRecord {
     }
     pub fn get_normal(&self) -> Vec3 {
         self.normal
+    }
+    pub fn get_front_face(&self) -> bool {
+        self.front_face
     }
 }
 
@@ -162,7 +171,8 @@ impl Hitable for Sphere {
             if temp < t_max && temp > t_min {
                 rec.t = temp;
                 rec.p = r.point_at_parameter(temp);
-                rec.normal = (rec.p - self.center) / self.radius;
+                rec.set_face_normal(r,&((rec.p - self.center) / self.radius));
+                // rec.normal = (rec.p - self.center) / self.radius;
                 rec.material = self.material.clone();
                 return true;
             }
