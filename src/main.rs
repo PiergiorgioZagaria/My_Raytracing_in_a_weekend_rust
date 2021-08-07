@@ -1,6 +1,12 @@
+mod hitables;
+mod materials;
 mod mylib;
 mod vecmath;
-use mylib::{Camera, HitableList, Materials, Sphere};
+
+use hitables::*;
+use materials::*;
+use mylib::*;
+
 // use mylib::{HitableList,Camera};
 use vecmath::Vec3;
 
@@ -8,6 +14,7 @@ use minifb::{Key, Window, WindowOptions};
 use rand::Rng;
 use rayon::prelude::*;
 use std::io::Write;
+use std::sync::Arc;
 
 const WIDTH: usize = 640;
 const HEIGHT: usize = 320;
@@ -51,22 +58,22 @@ fn main() {
                 Box::new(Sphere::new(
                     Vec3::new(0., 0., -1.),
                     0.5,
-                    Materials::Lambertian(Vec3::new(0.8, 0.3, 0.3)),
+                    Arc::new(Lambertian::new(Vec3::new(0.8, 0.3, 0.3))),
                 )),
                 Box::new(Sphere::new(
                     Vec3::new(0., -100.5, -1.),
                     100.,
-                    Materials::Lambertian(Vec3::new(0.8, 0.8, 0.)),
+                    Arc::new(Lambertian::new(Vec3::new(0.8, 0.8, 0.))),
                 )),
                 Box::new(Sphere::new(
                     Vec3::new(1., 0., -1.),
                     0.5,
-                    Materials::Metal(Vec3::new(0.8, 0.6, 0.2), 0.3),
+                    Arc::new(Metal::new(Vec3::new(0.8, 0.8, 0.), 0.3)),
                 )),
                 Box::new(Sphere::new(
                     Vec3::new(-1., 0., -1.),
                     0.5,
-                    Materials::Dieletric(1.5),
+                    Arc::new(Dieletric::new(1.5)),
                 )),
                 // Box::new(Sphere::new(Vec3::new(-1.,0.,-1.),-0.45,Materials::Dieletric(1.5))),
             ],
